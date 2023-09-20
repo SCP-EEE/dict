@@ -13,7 +13,9 @@
 ;; SKK Development Team <skk@ring.gr.jp>
 ;;
 ;; Maintainer: SKK Development Team <skk@ring.gr.jp>
+;; Version: $Id: SKK-JISYO.notes,v 1.15 2006/02/19 17:23:09 skk-cvs Exp $
 ;; Keywords: japanese
+;; Last Modified: $Date: 2006/02/19 17:23:09 $
 ;;
 ;; This dictionary is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -12090,7 +12092,7 @@
 さいけんしょう /再検証;‖サ変名詞[φs]/
 さいけんとう /再検討;‖サ変名詞[φs]/
 さいけんほうき /債権放棄;‖サ変名詞[φs]/
-さいげん /再現;reproduce‖サ変名詞[φs]/
+さいげん /再現;represent‖サ変名詞[φs]/
 さいげんかのう /再現可能;‖形容動詞[φdn],名詞/
 さいこう /最高;‖形容動詞[φdns],名詞/再考;‖サ変名詞[φs]/再興;‖サ変名詞[φs]/採光;‖サ変名詞[φs]/採鉱;‖サ変名詞[φs]/再校;‖サ変名詞[φs]/砕鉱;‖サ変名詞[φs]/
 さいこうかい /再公開;‖サ変名詞[φs]/

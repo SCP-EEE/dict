@@ -1,11 +1,12 @@
 # Makefile: makefile for SKK Dictionaries.
 #
 # Maintainer: SKK Development Team <skk@ring.gr.jp>
+# Version: $Id: Makefile,v 1.47 2015/01/16 07:34:37 skk-cvs Exp $
+# Last Modified: $Date: 2015/01/16 07:34:37 $
 
+BZIP2	  = bzip2 -9
 COUNT	  = skkdic-count
-CURL      = curl
 DATE	  = date
-EMACS	  = emacs --batch --directory ./
 EXPR	  = skkdic-expr
 EXPR2	  = skkdic-expr2
 GAWK	  = LC_ALL=C gawk
@@ -13,12 +14,12 @@ GREP	  = grep
 SED	  = sed
 GZIP	  = gzip -9
 MD5	  = md5
-MV	  = mv --force
 RM	  = /bin/rm -f
 RUBY	  = ruby -I $(TOOLS_DIR)/filters
 SORT	  = skkdic-sort
 TAR	  = tar
-UNZIP	  = unzip -o
+#TODAY	  = `$(DATE) '+%Y%m%d'`
+ZIP	  = zip
 ZIPDIC_DIR  = ./zipcode
 
 DIC2PDB = dic2pdb
@@ -46,11 +47,10 @@ CDB_SOURCE = ./SKK-JISYO.L
 CDB_TARGET = ./`basename $(CDB_SOURCE)`.cdb
 
 clean:
-	$(RM) *.gz* *~ `find . -name '*~'` `find . -name '.*~'` `find . -name '.#*'` \
-	*.unannotated SKK-JISYO.wrong PBinlineDB.pdb *.tmp *.w PBinlineDB.dic *.taciturn SKK-JISYO.L+ SKK-JISYO.total SKK-JISYO.total+zipcode SKK-JISYO.L.header SKK-JISYO.china_taiwan \
-	emoji-list.txt
+	$(RM) *.gz* *.bz2* *.zip* *~ `find . -name '*~'` `find . -name '.*~'` `find . -name '.#*'` \
+	*.unannotated SKK-JISYO.wrong PBinlineDB.pdb *.tmp *.w PBinlineDB.dic *.taciturn SKK-JISYO.L+ SKK-JISYO.total SKK-JISYO.total+zipcode SKK-JISYO.L.header SKK-JISYO.china_taiwan
 
-archive: gzip
+archive: gzip #zip bzip2
 
 unannotated: SKK-JISYO.L.unannotated SKK-JISYO.wrong SKK-JISYO.china_taiwan.unannotated
 
@@ -95,12 +95,21 @@ PBinlineDB_full.pdb: PBinlineDB.dic
 PBinlineDB.pdb: PBinlineDB_full.pdb
 	$(RM) PBinlineDB.dic
 
+zip: clean $(ALL_SRCS)
+	for file in $(ALL_SRCS); do \
+	  $(ZIP) $$file.zip $$file ;\
+	  $(MD5) $$file.zip >$$file.zip.md5; \
+	done
+	$(ZIP) SKK-JISYO.edict.zip SKK-JISYO.edict edict_doc.txt
+	$(ZIP) -r zipcode.zip $(ZIPDIC_DIR) -x@./skk.ex
+	$(MD5) zipcode.zip >zipcode.zip.md5
+
 gzip: clean $(ALL_SRCS)
 	for file in $(ALL_SRCS); do \
 	  $(GZIP) -fc $$file >$$file.gz ;\
 	  $(MD5) $$file.gz >$$file.gz.md5; \
 	done
-	$(TAR) cvpf SKK-JISYO.edict.tar SKK-JISYO.edict edict_doc.html
+	$(TAR) cvpf SKK-JISYO.edict.tar SKK-JISYO.edict edict_doc.txt
 	$(GZIP) -f SKK-JISYO.edict.tar
 	$(MD5) SKK-JISYO.edict.tar.gz > SKK-JISYO.edict.tar.gz.md5
 	$(TAR) cvzpf zipcode.tar.gz --exclude-from=./skk.ex ./zipcode
@@ -167,68 +176,17 @@ all: annotated-all unannotated-all taciturn-all
 cdb:
 	$(PYTHON) $(TOOLS_DIR)/$(SKK2CDB) $(CDB_TARGET) $(CDB_SOURCE)
 
-
-# Unicode emoji
-
-VER = 36.1
-
-SKK-JISYO.emoji: SKK-JISYO.emoji.en SKK-JISYO.emoji.ja SKK-JISYO.emoji.kana unicode-license.txt
-	$(EXPR2) SKK-JISYO.emoji.en + SKK-JISYO.emoji.ja + SKK-JISYO.emoji.kana \
-	  > SKK-JISYO.emoji.tmp
-	echo '-*- mode: fundamental; coding: utf-8 -*-' | cat - unicode-license.txt | $(SED) "s/^/;; /g" | cat - SKK-JISYO.emoji.tmp > SKK-JISYO.emoji
-	$(RM) SKK-JISYO.emoji.en SKK-JISYO.emoji.ja en.xml ja.xml
-	$(RM) SKK-JISYO.emoji.tmp SKK-JISYO.emoji.kana
-
-SKK-JISYO.emoji.en: cldr-common.zip
-	test -f en.xml || $(UNZIP) -p cldr-common.zip "*common/annotations/en.xml" > en.xml
-	$(EMACS) --load emoji.el --funcall en > SKK-JISYO.emoji.en
-
-SKK-JISYO.emoji.ja: cldr-common.zip
-	test -f ja.xml || $(UNZIP) -p cldr-common.zip "*common/annotations/ja.xml" > ja.xml
-	$(EMACS) --load emoji.el --funcall ja > SKK-JISYO.emoji.ja
-
-SKK-JISYO.emoji.kana: SKK-JISYO.emoji.kanji
-	$(EMACS) --load emoji.el --funcall kanji-to-kana > SKK-JISYO.emoji.kana
-	$(RM) SKK-JISYO.emoji.kanji
-
-SKK-JISYO.emoji.kanji: cldr-common.zip
-	test -f ja.xml || $(UNZIP) -p cldr-common.zip "*common/annotations/ja.xml" > ja.xml
-	$(EMACS) --load emoji.el --funcall kanjionly | $(EXPR2) > SKK-JISYO.emoji.kanji
-
-unicode-license.txt: cldr-common.zip
-	test -f unicode-license.txt || $(UNZIP) -p cldr-common.zip "*unicode-license.txt" > unicode-license.txt
-
-cldr-common.zip:
-	test -f cldr-common.zip || $(CURL) -o cldr-common.zip https://unicode.org/Public/cldr/$(VER)/cldr-common-$(VER).zip
-
-# http://www.edrdg.org/jmdict/edict.html
-#   ELECTRONIC DICTIONARY RESEARCH AND DEVELOPMENT GROUP GENERAL DICTIONARY LICENCE STATEMENT
-#   http://www.edrdg.org/edrdg/licence.html
-
-SKK-JISYO.edict2: edict2u
-	$(MV) SKK-JISYO.edict2 SKK-JISYO.edict2.ORIG
-	$(EMACS) --load $(TOOLS_DIR)/convert2skk/edict2toskk.el --funcall main | $(EXPR2) > SKK-JISYO.edict2.tmp
-	$(EMACS) --load $(TOOLS_DIR)/convert2skk/edict2toskk.el --funcall after
-	$(MV) SKK-JISYO.edict2.tmp SKK-JISYO.edict2
-	$(GZIP) -fc SKK-JISYO.edict2 > SKK-JISYO.edict2.gz
-	$(MD5) SKK-JISYO.edict2.gz > SKK-JISYO.edict2.gz.md5
-
-edict2u:
-	$(CURL) -o edict2u.gz http://ftp.monash.edu/pub/nihongo/edict2u.gz
-	$(GZIP) --force --decompress edict2u.gz
-
-
-# Unicode Ideographic Variation Database (IVD)
-
-SKK-JISYO.ivd: IVD_Sequences.txt IVD_Collections.txt
-	$(EMACS) --load ivd.el --funcall make-ivd-jisyo | $(EXPR2) > SKK-JISYO.ivd.tmp
-	echo '-*- mode: fundamental; coding: utf-8 -*-' | cat - unicode-license.txt | $(SED) "s/^/;; /g" | cat - SKK-JISYO.ivd.tmp > SKK-JISYO.ivd
-	$(RM) SKK-JISYO.ivd.tmp
-
-IVD_Sequences.txt:
-	test -f IVD_Sequences.txt || $(CURL) -o IVD_Sequences.txt https://unicode.org/ivd/data/2017-12-12/IVD_Sequences.txt
-
-IVD_Collections.txt:
-	test -f IVD_Collections.txt || $(CURL) -o IVD_Collections.txt https://unicode.org/ivd/data/2017-12-12/IVD_Collections.txt
+# bzip2: clean $(SRCS)
+# 	for file in $(SRCS); do \
+# 	  $(BZIP2) -fc $$file >$$file.bz2 ;\
+# 	  $(MD5) $$file.bz2 >$$file.bz2.md5; \
+# 	done
+# 	$(TAR) cvpf SKK-JISYO.edict.tar SKK-JISYO.edict edict_doc.txt
+# 	$(BZIP2) -f SKK-JISYO.edict.tar
+# 	$(MD5) SKK-JISYO.edict.tar.bz2 > SKK-JISYO.edict.tar.bz2.md5
+# #	$(TAR) cvpf zipcode.tar ./zipcode --exclude-from=./skk.ex
+# 	$(TAR) cvpf zipcode.tar ./zipcode
+# 	$(BZIP2) -f zipcode.tar
+# 	$(MD5) zipcode.tar.bz2 >zipcode.tar.bz2.md5
 
 # end of Makefile.

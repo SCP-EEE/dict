@@ -28,6 +28,7 @@
 
 ;;; Code:
 
+(require 'cl)
 (require 'time-stamp)
 
 (set-language-environment "Japanese")
@@ -67,34 +68,38 @@
       (set (car file) (expand-file-name (cdr file) temp-dir)))
     (setcdr (nthcdr 3 command-line-args-left) nil)))
 
-;; àÍî óXï÷î‘çÜóp .. make zipcode
+;; àÍî óXï÷î‘çÜóp
 (defun mkdic-zipcode ()
   (let (*addr3* *addr4*
 		*stat*)
     (set-buffer (get-buffer-create " *dic *"))
     (erase-buffer)
+    ;;
     (set-buffer (get-buffer-create " *csv *"))
     (erase-buffer)
-
+    ;;
     (let ((large-file-warning-threshold 20000000)
-	  (coding-system-for-read 'shift_jis-2004))
+	  (coding-system-for-read 'shift_jis))
       (insert-file-contents KEN_ALL))
-
+    ;;
     (goto-char (point-min))
+    ;;
     (while (not (looking-at "^[0-9]"))
       (forward-line))
-
+    ;;
     (mkdic-get-line)
     (while (eq (forward-line) 0)
       (mkdic-get-line))
-
+    ;;
     (set-buffer " *dic *")
+;    (set-buffer-file-coding-system 'euc-jp-unix)
+;    (set-buffer-modified-p t)
     (goto-char (point-min))
     (insert "\
 ;; okuri-ari entries.
 ;; okuri-nasi entries.
 ")
-    (let ((coding-system-for-write 'euc-jis-2004-unix))
+    (let ((coding-system-for-write 'euc-jp-unix))
       (write-region (point-min) (point-max) TEMP_ZIPCODE))))
 
 (defun mkdic-get-line ()
@@ -116,13 +121,13 @@
        ((= i 8)
 	(forward-char 1)
 	(setq addr3 (buffer-substring (point) (1- (search-forward "\""))))
-	(when (or (string-equal "à»â∫Ç…åfç⁄Ç™Ç»Ç¢èÍçá" addr3)
+	(when (or (string= "à»â∫Ç…åfç⁄Ç™Ç»Ç¢èÍçá" addr3)
 		  (string-match ".*àÍâ~$" addr3)
 		  (string-match ".*ÇÃéüÇ…î‘ínÇ™Ç≠ÇÈèÍçá$" addr3)
 		  (string-match "^[ÇO-ÇX].*[ÇO-ÇX]$" addr3))
 	  (setq addr3 ""))
 	;;
-	(when (string-equal addr3 "ïxâ™ÅiÅõÅõâÆï~Åj")
+	(when (string= addr3 "ïxâ™ÅiÅõÅõâÆï~Åj")
 	  ;; à§ímåßêVèÈésâÆï~ínãÊ?
 	  ;; à§ímåßêVèÈésâÆï~ÇÕï î‘çÜÇÃñÕól
 	  (setq addr3 "ïxâ™ÅiëÂâÆï~ÅAíÜâÆï~ÅAìåâÆï~ÅAêºâÆï~Åj"))
@@ -144,7 +149,7 @@
 		      (concat (substring addr3 0 start)
 			      (substring addr3 (1+ start) (match-end 0))))))
 	     ;;
-	     ((and (string-equal addr1 "ãûìsï{")
+	     ((and (string= addr1 "ãûìsï{")
 		   (string-match "^ãûìsés" addr2))
 	      (setq *addr4* (substring addr3 0 start))
 	      (setq *addr3* (substring addr3 start))
@@ -162,7 +167,7 @@
 			 addr3)))
 	      (setq *addr4* (substring addr3 0 start))
 	      (setq *addr3* (substring addr3 start))
-	      (when (string-equal *addr4* "çbÅAâ≥")
+	      (when (string= *addr4* "çbÅAâ≥")
 		(setq *addr4* ""))
 	      (if (and (string-match ".+Åj$" *addr3*)
 		       (not (string-match "Åu\\|Åv\\|Å`\\|[ÇO-ÇX]" *addr3*)))
@@ -272,7 +277,8 @@
      ((not *addr4*)
       (setq *addr3* nil)))
     ;;
-    (with-current-buffer " *dic *"
+    (save-excursion
+      (set-buffer " *dic *")
       (when (and zip addr1 addr2 addr3)
 	(insert zip  " /" addr1 addr2 addr3 "/\n")))))
 
@@ -282,20 +288,16 @@
      ((string-match "\\(Å`\\|Åiíöñ⁄Åj\\|ÇªÇÃëº\\|î‘ínÅj$\\)"
 		    nantaras)
       (setq nantaras nil))
-
      ((string-match "Åi[ÇO-ÇX]íöñ⁄Åj" nantaras)
       (setq cho (concat cho (substring nantaras 1 (1- (length nantaras)))))
       (setq nantaras nil))
-
      (t
       (setq nantaras (split-string (substring nantaras 1
 					      (1- (length nantaras)))
 				   "ÅA"))))
-
     (cond
      ((not nantaras)
       (setq addr cho))
-
      (t
       (setq addr (concat (car nantaras) cho))
       (dolist (nantara (cdr nantaras))
@@ -329,63 +331,71 @@
 	  (setq addr (concat addr "/" addr1 addr2 cho nantara))))
       addr))))
 
-;; éñã∆èäóp .. make office
+;; éñã∆èäóp
 (defun mkdic-office ()
   (let (*addr3* *addr4*	*stat*)
     (set-buffer (get-buffer-create " *dic *"))
     (erase-buffer)
-
+    ;;
     (set-buffer (get-buffer-create " *csv *"))
     (erase-buffer)
-
+    ;;
     (let ((coding-system-for-read 'binary))
       (insert-file-contents JIGYOSYO))
-
     ;; workaround 2007-01-16
-    ;; IBM ägí£ï∂éö fab1 Ç`çË'Åi8de8ÅjÇ÷íuä∑
-    ;;   (format "%x-%x" #o372 #o261) => "fa-b1"
     (goto-char (point-min))
-    (while (search-forward (decode-coding-string "\372\261" 'japanese-cp932) nil t)
+    (while (search-forward (string-as-multibyte "\372\261") nil t) ; òí?
       (replace-match "")
-      (insert (decode-coding-string "\215\350" 'sjis)))
-
+      (insert (string-as-multibyte "\215")
+	      (string-as-multibyte "\350"))) ; çË
     ;; workaround 2007-02-12
-    ;; IBM ägí£ï∂éö fadc Ç `ÇµÇÂÇ§'ÅiÇ–ÇÁÇ™Ç»ÇRï∂éöÅjÇ÷íuä∑
     (goto-char (point-min))
-    (while (search-forward (decode-coding-string "\372\334" 'japanese-cp932) nil t)
+    (while (search-forward (string-as-multibyte "\372\334") nil t) ; Îd?
       (replace-match "")
-      (insert (decode-coding-string "\202\265\202\345\202\244" 'sjis)))
-
+      (insert (string-as-multibyte "\202")
+	      (string-as-multibyte "\265")
+	      (string-as-multibyte "\202")
+	      (string-as-multibyte "\345")
+	      (string-as-multibyte "\202")
+	      (string-as-multibyte "\244"))) ; ÇµÇÂÇ§
     ;; workaround 2007-05-11
-    ;; fa 9c Ç `íÀ' Ç÷íuä∑
     (goto-char (point-min))
-    (while (search-forward (decode-coding-string "\372\234" 'japanese-cp932) nil t)
+    (while (search-forward (string-as-multibyte "\372\234") nil t) ; àv?
       (replace-match "")
-      (insert (decode-coding-string "\222\313" 'sjis)))
-
+      (insert (string-as-multibyte "\222")
+	      (string-as-multibyte "\313"))) ; íÀ
     ;; workaround 2011-06-09
-    ;; ÉnÉVÉSçÇÅiIBM ägí£ï∂éö fbfcÅjÇ `çÇ' Ç÷íuä∑
     (goto-char (point-min))
-    (while (search-forward (decode-coding-string "\373\374" 'japanese-cp932) nil t)
+    (while (search-forward (string-as-multibyte "\373\374") nil t) ; ÉnÉVÉSçÇ
       (replace-match "")
-      (insert (decode-coding-string "\215\202" 'sjis)))
-
-    (decode-coding-region (point-min) (point-max) 'shift_jis-2004)
+      (insert (string-as-multibyte "\215")
+	      (string-as-multibyte "\202"))) ; çÇ
+    ;;
+    (decode-coding-region (point-min) (point-max) 'shift_jis)
+    ;;
     (goto-char (point-min))
+    ;;
     (while (not (looking-at "^[0-9]"))
       (forward-line))
-
+    ;;
     (mkdic-office-get-line)
     (while (eq (forward-line) 0)
       (mkdic-office-get-line))
-
+    ;;
     (set-buffer " *dic *")
+;    (set-buffer-file-coding-system 'euc-jp-unix)
+;    (set-buffer-modified-p t)
+    (goto-char (point-min))
+    ;;
+ ;   (when (re-search-forward "^91086\"," nil t)
+ ;     (replace-match "9108630"))
+    ;;
     (goto-char (point-min))
     (insert "\
 ;; okuri-ari entries.
 ;; okuri-nasi entries.
 ")
-    (let ((coding-system-for-write 'euc-jis-2004-unix))
+    (let ((coding-system-for-write 'euc-jp-unix))
       (write-region (point-min) (point-max) TEMP_OFFICE))))
 
 (defun mkdic-office-get-line ()
@@ -393,30 +403,33 @@
 	zip name
 	addr1 addr2 addr3 addr4)
     (while (< i 9)
-      (cond ((= i 7)
-	     (forward-char 1)
-	     (setq zip (buffer-substring (point) (+ 7 (point)))))
-            ((= i 2)
-	     (forward-char 1)
-	     (setq name (buffer-substring (point) (1- (search-forward "\"")))))
-            ((= i 3)
-	     (forward-char 1)
-	     (setq addr1 (buffer-substring (point) (1- (search-forward "\"")))))
-            ((= i 4)
-	     (forward-char 1)
-	     (setq addr2 (buffer-substring (point) (1- (search-forward "\"")))))
-            ((= i 5)
-	     (forward-char 1)
-	     (setq addr3 (buffer-substring (point) (1- (search-forward "\"")))))
-            ((= i 6)
-	     (forward-char 1)
-	     (setq addr4 (buffer-substring (point) (1- (search-forward "\""))))))
+      (cond
+       ((= i 7)
+	(forward-char 1)
+	(setq zip (buffer-substring (point) (+ 7 (point)))))
+       ((= i 2)
+	(forward-char 1)
+	(setq name (buffer-substring (point) (1- (search-forward "\"")))))
+       ((= i 3)
+	(forward-char 1)
+	(setq addr1 (buffer-substring (point) (1- (search-forward "\"")))))
+       ((= i 4)
+	(forward-char 1)
+	(setq addr2 (buffer-substring (point) (1- (search-forward "\"")))))
+       ((= i 5)
+	(forward-char 1)
+	(setq addr3 (buffer-substring (point) (1- (search-forward "\"")))))
+       ((= i 6)
+	(forward-char 1)
+	(setq addr4 (buffer-substring (point) (1- (search-forward "\""))))))
+      ;;
       (let ((search (search-forward "," nil t)))
 	(setq i (if search
 		    (1+ i)
 		  9))))
-
-    (with-current-buffer " *dic *"
+    ;;
+    (save-excursion
+      (set-buffer " *dic *")
       (when (and zip name addr1 addr2 addr3 addr4)
 	(insert zip  " /" name " @ " addr1 addr2 addr3 addr4 "/\n")))))
 
@@ -435,7 +448,8 @@
       (goto-char (point-min))
       (while (re-search-forward "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9] "	nil t)
 	(setq str (buffer-substring (match-beginning 0) (1- (match-end 0))))
-	(with-current-buffer (get-buffer " *words *")
+	(save-excursion
+	  (set-buffer (get-buffer " *words *"))
 	  (goto-char (point-max))
 	  (insert (format "%s\n" str)))))
     ;;
@@ -444,30 +458,30 @@
     (set-buffer-file-coding-system 'raw-text-unix)
     (write-region (point-min) (point-max) WORDS)))
 
+;;
+
 (defun mkdic-zipcode-header ()
   (with-temp-buffer
     (insert "\
-;; -*- coding: euc-jis-2004; -*-
 ;; SKK-JISYO.zipcode --- 7-digit ZIP code dictionary for SKK
 " JISYO_HEADER)
     (let ((time-stamp-format "%02d %03b %y")
 	  (time-stamp-time-zone "GMT")
 	  (system-time-locale "C"))
       (time-stamp))
-    (set-buffer-file-coding-system 'euc-jis-2004-unix)
+    (set-buffer-file-coding-system 'euc-jp-unix)
     (write-region (point-min) (point-max) ZIPCODE)))
 
 (defun mkdic-office-header ()
   (with-temp-buffer
     (insert "\
-;; -*- coding: euc-jis-2004; -*-
 ;; SKK-JISYO.office.zipcode --- 7-digit ZIP code (offices) dictionary for SKK
 " JISYO_HEADER)
     (let ((time-stamp-format "%02d %03b %y")
 	  (time-stamp-time-zone "GMT")
 	  (system-time-locale "C"))
       (time-stamp))
-    (set-buffer-file-coding-system 'euc-jis-2004-unix)
+    (set-buffer-file-coding-system 'euc-jp-unix)
     (write-region (point-min) (point-max) OFFICE)))
 
 ;; ZIPCODE-MK ends here

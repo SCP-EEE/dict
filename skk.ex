@@ -5,9 +5,3 @@ not_used
 *.elc
 *.bak
 make.log
-Makefile.in
-README.md
-ZIPCODE-MK
-configure
-configure.ac
-.gitignore

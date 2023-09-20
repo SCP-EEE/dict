@@ -1,11 +1,13 @@
-;; -*- mode: fundamental; coding: euc-jis-2004 -*-
+;; -*- mode: fundamental; coding: euc-jp -*-
 ;; フルネーム辞書 for SKK system
 ;; Copyright (C) 2004-2006 Akie Kaidoh <kaidoh@ma.ctk.ne.jp>
 ;; Copyright (C) 2004-2006 SKK Development Team <skk@ring.gr.jp>
 ;;
 ;; Author: Akie Kaidoh <kaidoh@ma.ctk.ne.jp>
 ;; Maintainer: SKK Development Team <skk@ring.gr.jp>
+;; Version: $Id: SKK-JISYO.fullname,v 1.11 2017/03/24 10:14:05 skk-cvs Exp $
 ;; Keywords: japanese
+;; Last Modified: $Date: 2017/03/24 10:14:05 $
 ;;
 ;; This dictionary is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -9206,7 +9208,7 @@
 くわもとみとし /鍬本實敏;フルネーム,元・刑事/
 くわやてつお /桑谷哲男;フルネーム,可児市文化創造センター館長/
 ぐあんていゆうざ /愚安亭遊佐;フルネーム,ひとり芝居/
-ぐしけんようこう /具志堅用高;フルネーム,元・プロボクサー/
+ぐしけんようこう /具支堅用高;フルネーム,元・プロボクサー/
 ぐしまなおこ /具島直子;フルネーム,シンガーソングライター/
 ぐっちゆうぞう /グッチ裕三;フルネーム,タレント/
 ぐれーとぎだゆう /グレート義太夫;フルネーム,タレント/
